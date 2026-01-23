@@ -1,0 +1,66 @@
+<!--bluetooth.wxml-->
+<view class="container">
+  <view class="section">
+    <text class="section-title">已连接设备</text>
+    <view class="device-card" wx:for="{{connectedDevices}}" wx:key="id">
+      <view class="device-header">
+        <view class="device-info">
+          <view class="device-icon">
+            <t-icon name="bluetooth" size="24px" />
+          </view>
+          <view class="device-details">
+            <text class="device-name">{{item.name}}</text>
+            <text class="device-status">已连接 · 电量 {{item.battery}}%</text>
+          </view>
+        </view>
+        <view class="status-indicator">
+          <view class="status-dot {{item.connected ? 'connected' : ''}}"></view>
+          <text class="status-text">{{item.connected ? '在线' : '离线'}}</text>
+        </view>
+      </view>
+      <view class="device-actions">
+        <t-button theme="default" size="small" bind:tap="disconnectDevice" data-id="{{item.id}}">断开连接</t-button>
+        <t-button theme="primary" size="small" bind:tap="viewDeviceDetail" data-id="{{item.id}}">设备详情</t-button>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">附近设备</text>
+      <t-button theme="primary" size="small" bind:tap="scanDevices">扫描</t-button>
+    </view>
+    <view class="device-list">
+      <view class="device-item" wx:for="{{nearbyDevices}}" wx:key="id">
+        <view class="device-info">
+          <view class="device-icon gray">
+            <t-icon name="bluetooth" size="24px" />
+          </view>
+          <view class="device-details">
+            <text class="device-name">{{item.name}}</text>
+            <text class="device-status">信号强度: {{item.signal}}</text>
+          </view>
+        </view>
+        <t-button theme="primary" size="small" bind:tap="connectDevice" data-id="{{item.id}}">连接</t-button>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <text class="section-title">历史记录</text>
+    <t-cell-group>
+      <t-cell 
+        wx:for="{{historyDevices}}" 
+        wx:key="id"
+        title="{{item.name}}"
+        note="最后连接: {{item.lastConnectTime}}"
+        arrow
+      >
+        <view slot="note">
+          <text class="history-status">已断开</text>
+        </view>
+      </t-cell>
+    </t-cell-group>
+  </view>
+</view>
+

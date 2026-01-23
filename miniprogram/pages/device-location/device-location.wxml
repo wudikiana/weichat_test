@@ -1,0 +1,89 @@
+<!--device-location.wxml-->
+<view class="container">
+  <!-- 定位状态 -->
+  <view class="status-card">
+    <view class="status-indicator">
+      <view class="pulse-ring"></view>
+      <view class="pulse-ring delay"></view>
+      <view class="status-icon">
+        <t-icon name="check-circle" size="48px" color="#ffffff" />
+      </view>
+    </view>
+    <text class="status-title">设备位置正确</text>
+    <text class="status-desc">传感器检测到设备已正确佩戴</text>
+    <view class="success-rate">
+      <t-tag theme="success" size="large">定位成功率: 95%</t-tag>
+    </view>
+  </view>
+
+  <!-- 实时反馈 -->
+  <view class="section">
+    <text class="section-title">实时反馈</text>
+    <view class="feedback-list">
+      <view class="feedback-item success" wx:for="{{feedbacks}}" wx:key="id">
+        <view class="feedback-dot"></view>
+        <text class="feedback-text">{{item.text}}</text>
+        <t-icon name="check-circle" size="16px" color="#00A870" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 声音提示设置 -->
+  <view class="section">
+    <text class="section-title">声音提示</text>
+    <t-cell-group>
+      <t-cell title="启用声音提示" note="位置正确/错误时播放提示音">
+        <t-switch slot="right-icon" value="{{soundEnabled}}" bind:change="toggleSound" />
+      </t-cell>
+    </t-cell-group>
+    <view class="slider-group">
+      <view class="slider-item">
+        <text class="slider-label">音调设置</text>
+        <t-slider value="{{toneValue}}" min="1" max="10" bind:change="onToneChange" />
+        <text class="slider-value">{{toneLabel}}</text>
+      </view>
+      <view class="slider-item">
+        <text class="slider-label">频率设置</text>
+        <t-slider value="{{frequencyValue}}" min="1" max="10" bind:change="onFrequencyChange" />
+        <text class="slider-value">{{frequencyLabel}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 佩戴示意图 -->
+  <view class="section">
+    <text class="section-title">正确佩戴示意图</text>
+    <view class="guide-image">
+      <t-icon name="image" size="64px" color="#cccccc" />
+    </view>
+    <view class="guide-steps">
+      <text class="step-item">1. 将设备轻轻放入耳道，确保贴合舒适</text>
+      <text class="step-item">2. 调整角度，使设备与耳道自然贴合</text>
+      <text class="step-item">3. 听到确认音表示位置正确</text>
+    </view>
+  </view>
+
+  <!-- 定位统计 -->
+  <view class="section">
+    <text class="section-title">定位统计</text>
+    <view class="stats-grid">
+      <view class="stat-item">
+        <text class="stat-value">{{stats.successRate}}%</text>
+        <text class="stat-label">成功率</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-value success">{{stats.successCount}}</text>
+        <text class="stat-label">成功次数</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-value warning">{{stats.failCount}}</text>
+        <text class="stat-label">失败次数</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="action-wrapper">
+    <t-button theme="primary" size="large" bind:tap="startLocation">开始定位检测</t-button>
+  </view>
+</view>
+

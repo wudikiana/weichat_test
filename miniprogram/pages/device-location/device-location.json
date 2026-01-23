@@ -1,0 +1,13 @@
+{
+  "navigationBarTitleText": "设备定位",
+  "usingComponents": {
+    "t-icon": "tdesign-miniprogram/icon/icon",
+    "t-tag": "tdesign-miniprogram/tag/tag",
+    "t-cell": "tdesign-miniprogram/cell/cell",
+    "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
+    "t-switch": "tdesign-miniprogram/switch/switch",
+    "t-slider": "tdesign-miniprogram/slider/slider",
+    "t-button": "tdesign-miniprogram/button/button"
+  }
+}
+

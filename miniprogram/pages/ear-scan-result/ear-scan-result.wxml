@@ -1,0 +1,73 @@
+<!--ear-scan-result.wxml-->
+<view class="container">
+  <!-- 分析结果卡片 -->
+  <view class="result-card">
+    <view class="result-header">
+      <view class="result-icon success">
+        <t-icon name="check-circle" size="48px" />
+      </view>
+      <text class="result-title">分析完成</text>
+      <text class="result-status">整体状况：<text class="status-text success">正常</text></text>
+      <text class="result-time">分析时间：{{result.time}}</text>
+    </view>
+
+    <!-- 扫描图片 -->
+    <view class="images-section">
+      <text class="section-label">扫描图片</text>
+      <view class="images-grid">
+        <view class="image-item" wx:for="{{result.images}}" wx:key="index"></view>
+      </view>
+    </view>
+
+    <!-- 分析详情 -->
+    <view class="analysis-section">
+      <text class="section-label">耳部结构识别</text>
+      <view class="structure-list">
+        <view class="structure-item" wx:for="{{result.structures}}" wx:key="name">
+          <text class="structure-name">{{item.name}}</text>
+          <t-tag theme="success" size="small">{{item.status}}</t-tag>
+        </view>
+      </view>
+    </view>
+
+    <view class="analysis-section">
+      <text class="section-label">异常标记</text>
+      <view class="abnormal-box">
+        <text>{{result.abnormal || '未发现明显异常，所有结构均在正常范围内。'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 健康建议 -->
+  <view class="section">
+    <text class="section-title">健康建议</text>
+    <view class="suggestion-list">
+      <text class="suggestion-item" wx:for="{{suggestions}}" wx:key="index">• {{item}}</text>
+    </view>
+  </view>
+
+  <!-- 下一步行动 -->
+  <view class="section">
+    <text class="section-title">下一步行动</text>
+    <view class="action-buttons">
+      <t-button theme="primary" size="large" bind:tap="saveRecord">保存到健康记录</t-button>
+      <t-button theme="default" size="large" bind:tap="shareToDoctor">分享给医生咨询</t-button>
+      <t-button theme="default" size="large" bind:tap="bookCheckup">预约专业检查</t-button>
+    </view>
+  </view>
+
+  <!-- 历史对比 -->
+  <view class="section">
+    <text class="section-title">与上次对比</text>
+    <t-cell-group>
+      <t-cell title="上次扫描时间" note="{{comparison.lastTime}}" />
+      <t-cell title="上次结果">
+        <t-tag slot="right-icon" theme="warning" size="small">{{comparison.lastStatus}}</t-tag>
+      </t-cell>
+      <t-cell title="变化趋势">
+        <text slot="right-icon" class="trend-text success">{{comparison.trend}}</text>
+      </t-cell>
+    </t-cell-group>
+  </view>
+</view>
+

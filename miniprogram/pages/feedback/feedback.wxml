@@ -1,0 +1,69 @@
+<!--feedback.wxml-->
+<view class="container">
+  <view class="form-section">
+    <text class="form-label">问题分类</text>
+    <view class="category-grid">
+      <t-button 
+        wx:for="{{categories}}" 
+        wx:key="id"
+        theme="{{selectedCategory === item.id ? 'primary' : 'default'}}"
+        size="medium"
+        bind:tap="selectCategory"
+        data-id="{{item.id}}"
+      >
+        {{item.name}}
+      </t-button>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <text class="form-label">问题描述</text>
+    <t-textarea 
+      value="{{description}}"
+      placeholder="请详细描述您遇到的问题或建议..."
+      maxlength="500"
+      bind:change="onDescriptionChange"
+    />
+    <text class="char-count">{{description.length}}/500</text>
+  </view>
+
+  <view class="form-section">
+    <text class="form-label">上传图片（最多3张）</text>
+    <t-upload 
+      files="{{images}}"
+      max="{{3}}"
+      bind:change="onImageChange"
+    />
+  </view>
+
+  <view class="form-section">
+    <text class="form-label">联系方式（可选）</text>
+    <t-input 
+      value="{{contact}}"
+      placeholder="手机号、邮箱或微信号"
+      bind:change="onContactChange"
+    />
+  </view>
+
+  <view class="submit-wrapper">
+    <t-button theme="primary" size="large" bind:tap="submitFeedback">提交反馈</t-button>
+  </view>
+
+  <!-- 反馈记录 -->
+  <view class="section">
+    <text class="section-title">我的反馈</text>
+    <view class="feedback-list">
+      <view class="feedback-item" wx:for="{{myFeedbacks}}" wx:key="id">
+        <view class="feedback-header">
+          <view>
+            <text class="feedback-category">{{item.category}}</text>
+            <text class="feedback-date">{{item.date}}</text>
+          </view>
+          <t-tag theme="{{item.status === '已处理' ? 'success' : 'primary'}}" size="small">{{item.status}}</t-tag>
+        </view>
+        <text class="feedback-content">{{item.content}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
