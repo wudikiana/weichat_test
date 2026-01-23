@@ -1,0 +1,70 @@
+<!--health-assessment.wxml-->
+<view class="container">
+  <view class="start-btn-wrapper">
+    <t-button theme="primary" size="large" shape="round" bind:tap="startAssessment">开始新的健康评测</t-button>
+  </view>
+
+  <!-- 最近评测结果 -->
+  <view class="section">
+    <text class="section-title">最近评测结果</text>
+    <view class="result-card">
+      <view class="result-header">
+        <view>
+          <text class="result-label">综合评分</text>
+          <text class="result-date">{{latestResult.date}}</text>
+        </view>
+        <view class="result-score">
+          <text class="score-value">{{latestResult.score}}</text>
+          <text class="score-unit">分</text>
+        </view>
+      </view>
+      
+      <view class="score-details">
+        <view class="score-item" wx:for="{{latestResult.details}}" wx:key="name">
+          <view class="score-info">
+            <text class="score-name">{{item.name}}</text>
+            <text class="score-point">{{item.score}}分</text>
+          </view>
+          <t-progress percentage="{{item.score}}" color="{{item.color}}" />
+        </view>
+      </view>
+
+      <view class="suggestion-box">
+        <text class="suggestion-title">个性化建议</text>
+        <text class="suggestion-text">{{latestResult.suggestion}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 评测历史 -->
+  <view class="section">
+    <text class="section-title">评测历史</text>
+    <t-cell-group>
+      <t-cell 
+        wx:for="{{history}}" 
+        wx:key="id"
+        title="{{item.date}}"
+        note="综合评分: {{item.score}}分"
+        arrow
+        bind:click="viewHistory"
+        data-id="{{item.id}}"
+      >
+        <t-tag slot="right-icon" theme="{{item.status === '良好' ? 'success' : 'warning'}}" size="small">{{item.status}}</t-tag>
+      </t-cell>
+    </t-cell-group>
+  </view>
+
+  <!-- 趋势分析 -->
+  <view class="section">
+    <text class="section-title">趋势分析</text>
+    <view class="chart-container">
+      <view class="chart-bars">
+        <view class="chart-bar" wx:for="{{trendData}}" wx:key="date" style="height: {{item.height}}%">
+          <view class="bar {{item.isLatest ? 'active' : ''}}"></view>
+        </view>
+      </view>
+      <text class="chart-label">综合评分趋势</text>
+    </view>
+  </view>
+</view>
+
