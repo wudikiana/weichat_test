@@ -1,0 +1,54 @@
+<!--profile-edit.wxml-->
+<view class="container">
+  <view class="avatar-section">
+    <view class="avatar-wrapper">
+      <t-avatar size="large" image="{{userInfo.avatarUrl || '/assets/images/default-avatar.png'}}" />
+      <view class="avatar-edit-btn" bind:tap="chooseAvatar">
+        <t-icon name="edit" size="16px" color="#ffffff" />
+      </view>
+    </view>
+  </view>
+
+  <t-cell-group>
+    <t-cell title="昵称" arrow>
+      <t-input 
+        slot="note" 
+        value="{{userInfo.nickName}}" 
+        placeholder="请输入昵称"
+        bind:change="onNickNameChange"
+      />
+    </t-cell>
+    
+    <t-cell title="年龄" arrow>
+      <t-input 
+        slot="note" 
+        type="number"
+        value="{{userInfo.age}}" 
+        placeholder="请输入年龄"
+        bind:change="onAgeChange"
+      />
+    </t-cell>
+    
+    <t-cell title="性别">
+      <t-radio-group slot="note" value="{{userInfo.gender}}" bind:change="onGenderChange">
+        <t-radio value="男" label="男" />
+        <t-radio value="女" label="女" />
+      </t-radio-group>
+    </t-cell>
+    
+    <t-cell title="手机号" arrow>
+      <t-input 
+        slot="note" 
+        type="number"
+        value="{{userInfo.phone}}" 
+        placeholder="请输入手机号"
+        bind:change="onPhoneChange"
+      />
+    </t-cell>
+  </t-cell-group>
+
+  <view class="save-btn-wrapper">
+    <t-button theme="primary" size="large" bind:tap="saveUserInfo">保存</t-button>
+  </view>
+</view>
+
