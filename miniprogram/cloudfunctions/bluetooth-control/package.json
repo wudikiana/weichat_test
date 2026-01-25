@@ -1,0 +1,12 @@
+{
+  "name": "bluetooth-control",
+  "version": "1.0.0",
+  "description": "蓝牙设备控制云函数",
+  "main": "index.js",
+  "author": "ear-health",
+  "license": "MIT",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
+
