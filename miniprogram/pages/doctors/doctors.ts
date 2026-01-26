@@ -1,6 +1,9 @@
 // doctors.ts
+const app = getApp<IAppOption>()
+
 Page({
   data: {
+    envId: 'cloudbase-9ghm3xfo6fefd1bb',
     categories: [
       { id: 'all', name: '全部' },
       { id: 'ent', name: '耳鼻喉科' },
@@ -48,39 +51,85 @@ Page({
         bookable: true,
         online: false
       }
-    ]
+    ],
+    yuqueDocUrl: 'https://cqbszyy.hityun.cn/portal-web/#/pages/home/index'
   },
 
   onLoad(options: any) {
+    // 初始化云开发
+    if (!app.globalData.cloudInit) {
+      wx.cloud.init({
+        env: this.data.envId
+      })
+      app.globalData.cloudInit = true
+      app.globalData.envId = this.data.envId
+    }
+
     if (options.id) {
       // 查看特定医生详情
+      this.selectCategory({ currentTarget: { dataset: { id: options.id } } } as any)
     }
-    this.loadDoctors();
+    this.loadDoctors()
   },
 
   loadDoctors() {
-    // 从服务器加载医生列表
+    // 从服务器加载医生列表（如果需要）
+    console.log('加载医生列表')
   },
 
   selectCategory(e: any) {
-    this.setData({ selectedCategory: e.currentTarget.dataset.id });
-    // 根据分类筛选医生
+    const categoryId = e.currentTarget.dataset.id
+    this.setData({ selectedCategory: categoryId })
+    // 根据分类筛选医生（实际项目中可以从服务器加载）
+    console.log('选择的分类:', categoryId)
   },
 
   consultDoctor(e: any) {
-    const id = e.currentTarget.dataset.id;
-    wx.showToast({
-      title: '正在连接医生...',
-      icon: 'loading'
-    });
+    // 直接跳转到语雀文档进行在线咨询
+    wx.setClipboardData({
+      data: this.data.yuqueDocUrl,
+      success: () => {
+        wx.showToast({
+          title: '链接已复制，请在浏览器打开',
+          icon: 'none',
+          duration: 3000
+        })
+      }
+    })
   },
 
-  bookDoctor(e: any) {
-    const id = e.currentTarget.dataset.id;
-    wx.showToast({
-      title: '跳转预约页面',
-      icon: 'none'
-    });
-  }
-});
+  async bookDoctor(e: any) {
+    const doctor = e.currentTarget.dataset.item
 
+    // 检查是否可以预约
+    if (!doctor.bookable) {
+      wx.showToast({
+        title: '该医生暂不可预约',
+        icon: 'none'
+      })
+      return
+    }
+
+    wx.showModal({
+      title: '预约挂号',
+      content: `确定预约 ${doctor.name} 医生的门诊吗？`,
+      confirmText: '确认预约',
+      success: (res) => {
+        if (res.confirm) {
+          // 实际项目中跳转到预约页面或提交预约信息
+          wx.showToast({
+            title: '预约成功',
+            icon: 'success'
+          })
+        }
+      }
+    })
+  },
+
+  // 查看医生详情
+  viewDoctorDetail(e: any) {
+    const doctor = e.currentTarget.dataset.item
+    // 跳转到医生详情页面（如果有的话）
+    console.log('查看医生详情:', doctor.id)
+  }
+})
