@@ -17,7 +17,7 @@ exports.main = async (event, context) => {
   const { action, deviceId, data } = event
 
   // 记录操作日志
-  const logOperation = (operation: string, details: any) => {
+  const logOperation = (operation, details) => {
     db.collection('bluetooth_logs').add({
       data: {
         openid,
@@ -233,12 +233,12 @@ exports.main = async (event, context) => {
         }).get()
 
         const totalDevices = statsRes.data?.length || 0
-        const connectedCount = statsRes.data?.filter((d: any) => d.connected).length || 0
+        const connectedCount = statsRes.data?.filter((d) => d.connected).length || 0
         
         // 计算平均挡位使用
-        const powerLevels = statsRes.data?.map((d: any) => d.powerLevel).filter(Boolean) || []
+        const powerLevels = statsRes.data?.map((d) => d.powerLevel).filter(Boolean) || []
         const avgPower = powerLevels.length > 0 
-          ? (powerLevels.reduce((a: number, b: number) => a + b, 0) / powerLevels.length).toFixed(1)
+          ? (powerLevels.reduce((a, b) => a + b, 0) / powerLevels.length).toFixed(1)
           : 0
 
         return {
