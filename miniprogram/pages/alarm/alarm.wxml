@@ -1,13 +1,13 @@
 <!--alarm.wxml-->
 <view class="container">
   <view class="alarm-list">
-    <view class="alarm-item" wx:for="{{alarms}}" wx:key="id">
+    <view class="alarm-item" wx:for="{{alarms}}" wx:key="_id">
       <view class="alarm-header">
         <view class="alarm-time-info">
           <text class="alarm-time">{{item.time}}</text>
           <text class="alarm-repeat">{{item.repeat}}</text>
         </view>
-        <t-switch value="{{item.enabled}}" bind:change="toggleAlarm" data-id="{{item.id}}" />
+        <t-switch value="{{item.enabled}}" bind:change="toggleAlarm" data-id="{{item._id}}" />
       </view>
       <view class="alarm-footer">
         <view class="alarm-type">
@@ -15,8 +15,8 @@
           <text>{{item.type}}</text>
         </view>
         <view class="alarm-actions">
-          <text class="action-btn" bind:tap="editAlarm" data-id="{{item.id}}">编辑</text>
-          <text class="action-btn delete" bind:tap="deleteAlarm" data-id="{{item.id}}">删除</text>
+          <text class="action-btn" bind:tap="editAlarm" data-id="{{item._id}}">编辑</text>
+          <text class="action-btn delete" bind:tap="deleteAlarm" data-id="{{item._id}}">删除</text>
         </view>
       </view>
       <text class="alarm-note" wx:if="{{item.note}}">备注：{{item.note}}</text>
@@ -34,4 +34,3 @@
     <t-button theme="primary" size="large" shape="round" bind:tap="addAlarm">添加闹钟</t-button>
   </view>
 </view>
-
