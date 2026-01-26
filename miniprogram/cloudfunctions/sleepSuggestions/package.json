@@ -1,0 +1,14 @@
+{
+  "name": "sleep-suggestions",
+  "version": "1.0.0",
+  "description": "睡眠建议生成云函数",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  },
+  "author": "",
+  "license": "ISC"
+}
