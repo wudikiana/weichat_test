@@ -53,7 +53,7 @@
       <t-button theme="primary" size="large" bind:tap="choosePreWearImage" wx:if="{{!preWearImage}}">
         上传图片
       </t-button>
-      <t-button theme="primary" size="large" bind:tap="function(){setData({currentStep: 2})}" wx:if="{{preWearImage}}">
+      <t-button theme="primary" size="large" bind:tap="goToStep2" wx:if="{{preWearImage}}">
         下一步：标记位置
       </t-button>
     </view>
@@ -65,20 +65,52 @@
       <text class="section-title">标记佩戴位置</text>
       <text class="section-desc">请在图片上绘制一条弧线，标记设备应该佩戴的位置</text>
       
-      <!-- Canvas绘图区域 -->
-      <view class="canvas-container">
-        <canvas 
-          id="marking-canvas" 
-          class="marking-canvas"
-          bind:touchstart="onCanvasTouchStart"
-          bind:touchmove="onCanvasTouchMove"
-          bind:touchend="onCanvasTouchEnd"
-        ></canvas>
-        
-        <view class="canvas-overlay" wx:if="{{!isMarking}}">
-          <text class="canvas-hint">点击下方按钮开始标记</text>
+        <!-- Canvas绘图区域 -->
+        <view class="canvas-container" style="width: 100%; height: 500rpx;">
+          <canvas 
+            canvas-id="marking-canvas"
+            id="marking-canvas"
+            class="marking-canvas"
+            style="width: 100%; height: 100%; border: 3px solid #ff0000; background: #f0f0f0;"
+            bind:touchstart="onCanvasTouchStart"
+            bind:touchmove="onCanvasTouchMove"
+            bind:touchend="onCanvasTouchEnd"
+          ></canvas>
+          
+          <!-- 添加图片预览作为备用 -->
+          <image 
+            wx:if="{{preWearImage && !canvasReady}}" 
+            src="{{preWearImage}}" 
+            mode="aspectFit" 
+            style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 0;"
+          />
+          
+          <!-- 调试信息显示 -->
+          <view class="debug-info" wx:if="{{imageInfo}}" style="position: absolute; top: 10rpx; left: 10rpx; background: rgba(0,0,0,0.7); color: white; padding: 8rpx; border-radius: 8rpx; font-size: 20rpx; z-index: 10;">
+            <text>图片: {{imageInfo.width.toFixed(0)}}x{{imageInfo.height.toFixed(0)}}</text>
+            <text wx:if="{{canvasWidth && canvasHeight}}"> | Canvas: {{canvasWidth.toFixed(0)}}x{{canvasHeight.toFixed(0)}}</text>
+            <text wx:if="{{canvasError}}"> | 错误: {{canvasError}}</text>
+            <text wx:if="{{canvasReady}}"> | 就绪</text>
+            <text wx:if="{{useLegacyCanvas}}"> | 旧版API</text>
+            <text wx:if="{{useCanvas2D}}"> | Canvas 2D</text>
+          </view>
+          
+          <!-- Canvas边框测试 -->
+          <view style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 5;">
+            <view style="position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: #00ff00;"></view>
+            <view style="position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: #00ff00;"></view>
+            <view style="position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: #00ff00;"></view>
+            <view style="position: absolute; top: 0; right: 0; width: 3px; height: 100%; background: #00ff00;"></view>
+          </view>
+          
+          <!-- 标记提示覆盖层 -->
+          <view class="canvas-overlay" wx:if="{{!isMarking}}">
+            <text class="canvas-hint">点击下方按钮开始标记</text>
+          </view>
+          <view class="canvas-marking-overlay" wx:if="{{isMarking}}">
+            <text class="canvas-marking-hint">请在图片上绘制佩戴位置弧线</text>
+          </view>
         </view>
-      </view>
       
       <view class="marking-controls">
         <t-button theme="primary" size="medium" bind:tap="startMarking" wx:if="{{!isMarking}}">
@@ -118,11 +150,14 @@
     </view>
 
     <view class="action-buttons">
-      <t-button theme="default" size="large" bind:tap="function(){setData({currentStep: 1})}">
+      <t-button theme="default" size="large" bind:tap="goToStep1">
         上一步
       </t-button>
-      <t-button theme="primary" size="large" bind:tap="function(){setData({currentStep: 3})}">
+      <t-button theme="primary" size="large" bind:tap="goToStep3">
         下一步：上传佩戴后图片
+      </t-button>
+      <t-button theme="warning" size="large" bind:tap="showCanvasDebugInfo">
+        调试信息
       </t-button>
     </view>
   </view>
@@ -160,7 +195,7 @@
     </view>
 
     <view class="action-buttons">
-      <t-button theme="default" size="large" bind:tap="function(){setData({currentStep: 2})}">
+      <t-button theme="default" size="large" bind:tap="goToStep2">
         上一步
       </t-button>
       <t-button theme="primary" size="large" bind:tap="choosePostWearImage" wx:if="{{!postWearImage}}">
