@@ -67,22 +67,49 @@
       
         <!-- Canvas绘图区域 -->
         <view class="canvas-container" style="width: 100%; height: 500rpx;">
-          <canvas 
-            canvas-id="marking-canvas"
-            id="marking-canvas"
-            class="marking-canvas"
-            style="width: 100%; height: 100%; border: 3px solid #ff0000; background: #f0f0f0;"
-            bind:touchstart="onCanvasTouchStart"
-            bind:touchmove="onCanvasTouchMove"
-            bind:touchend="onCanvasTouchEnd"
-          ></canvas>
+          <!-- 备用图片预览模式 -->
+          <view wx:if="{{!canvasReady || canvasError}}" style="width: 100%; height: 100%; position: relative;">
+            <image 
+              wx:if="{{preWearImage}}" 
+              src="{{preWearImage}}" 
+              mode="aspectFit" 
+              style="width: 100%; height: 100%;"
+            />
+            <view wx:else style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #f0f0f0;">
+              <t-icon name="image" size="64px" color="#cccccc" />
+              <text style="margin-top: 20rpx; color: #999999; font-size: 28rpx;">请先上传图片</text>
+            </view>
+            
+            <!-- 备用模式提示 -->
+            <view style="position: absolute; top: 20rpx; left: 20rpx; background: rgba(0, 82, 217, 0.8); color: white; padding: 10rpx 20rpx; border-radius: 8rpx; font-size: 24rpx;">
+              <text>备用图片预览模式</text>
+            </view>
+            
+            <!-- 标记提示 -->
+            <view style="position: absolute; bottom: 20rpx; left: 0; right: 0; text-align: center;">
+              <text style="color: #ff0000; font-size: 28rpx;">提示：Canvas不可用，使用图片预览模式</text>
+            </view>
+          </view>
           
-          <!-- 添加图片预览作为备用 -->
+          <!-- Canvas绘图模式 -->
+          <view wx:else style="width: 100%; height: 100%;">
+            <canvas 
+              canvas-id="marking-canvas"
+              id="marking-canvas"
+              class="marking-canvas"
+              style="width: 100%; height: 100%; border: 3px solid #ff0000; background: #f0f0f0;"
+              bind:touchstart="onCanvasTouchStart"
+              bind:touchmove="onCanvasTouchMove"
+              bind:touchend="onCanvasTouchEnd"
+            ></canvas>
+          </view>
+          
+          <!-- 添加图片预览作为备用（旧版兼容） -->
           <image 
             wx:if="{{preWearImage && !canvasReady}}" 
             src="{{preWearImage}}" 
             mode="aspectFit" 
-            style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 0;"
+            style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 0; display: none;"
           />
           
           <!-- 调试信息显示 -->

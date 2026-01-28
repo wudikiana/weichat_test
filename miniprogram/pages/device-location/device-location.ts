@@ -281,6 +281,54 @@ Page({
       }, 100); // 每100ms检查一次
     });
   },
+  
+  // 改进的Canvas就绪检查方法（带超时和备用方案）
+  ensureCanvasReadyImproved(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // 如果Canvas已经就绪，立即返回
+      if (this.data.canvasReady && this.data.ctx) {
+        console.log('Canvas已就绪，上下文存在');
+        resolve();
+        return;
+      }
+      
+      console.log('Canvas未就绪，开始改进的等待流程...');
+      
+      // 设置超时（3秒）
+      const timeoutId = setTimeout(() => {
+        console.error('Canvas初始化超时（改进版本）');
+        reject(new Error('Canvas初始化超时'));
+      }, 3000);
+      
+      // 尝试初始化Canvas
+      this.initCanvas();
+      
+      // 使用更频繁的检查
+      let checkCount = 0;
+      const maxChecks = 30; // 最多检查30次（3秒）
+      const checkInterval = setInterval(() => {
+        checkCount++;
+        
+        if (this.data.canvasReady && this.data.ctx) {
+          clearInterval(checkInterval);
+          clearTimeout(timeoutId);
+          console.log(`Canvas在第${checkCount}次检查后准备就绪（改进版本）`);
+          resolve();
+        } else if (checkCount >= maxChecks) {
+          clearInterval(checkInterval);
+          clearTimeout(timeoutId);
+          console.error('Canvas初始化多次检查失败（改进版本）');
+          reject(new Error('Canvas初始化多次检查失败'));
+        } else {
+          // 每100次检查尝试重新初始化一次
+          if (checkCount % 10 === 0) {
+            console.log(`第${checkCount}次检查，尝试重新初始化Canvas...`);
+            this.initCanvas();
+          }
+        }
+      }, 100); // 每100ms检查一次
+    });
+  },
 
   // 加载参考图片
   async loadReferenceImage() {
@@ -485,6 +533,15 @@ Page({
         icon: 'error',
         duration: 2000
       });
+      
+      // 尝试重新初始化Canvas，然后重试绘制
+      this.initCanvas();
+      setTimeout(() => {
+        if (this.data.canvasReady) {
+          console.log('Canvas重新初始化成功，重试绘制图片');
+          this.drawImageOnCanvas(imageUrl);
+        }
+      }, 500);
       return;
     }
     
@@ -500,8 +557,20 @@ Page({
     
     console.log('开始绘制图片到Canvas（使用旧版API）:', imageUrl);
     
-    // 只使用旧版canvas绘制
-    this.drawImageOnCanvasLegacy(imageUrl);
+    // 验证图片URL并确保Canvas完全就绪
+    this.ensureCanvasReady().then(() => {
+      console.log('Canvas确认就绪，开始绘制图片');
+      this.drawImageOnCanvasLegacy(imageUrl);
+    }).catch((error: any) => {
+      console.error('Canvas准备失败:', error);
+      wx.showToast({
+        title: 'Canvas准备失败，使用简化绘制',
+        icon: 'none',
+        duration: 2000
+      });
+      // 使用简化绘制作为备用方案
+      this.drawImageSimple(imageUrl);
+    });
   },
 
   // 使用Canvas 2D绘制图片
@@ -1501,40 +1570,53 @@ Page({
   },
 
   goToStep2() {
+    console.log('切换到步骤2，优化Canvas初始化流程...');
+    
+    // 先重置Canvas状态
     this.setData({ 
       currentStep: 2,
-      canvasReady: false // 强制重新初始化
+      canvasReady: false,
+      canvasError: '',
+      imageInfo: null,
+      useImagePreview: false // 重置图片预览标志
     }, () => {
-      console.log('切换到步骤2，等待DOM更新...');
+      console.log('Canvas状态已重置，等待DOM更新...');
       
-      // 给DOM足够时间渲染
-      setTimeout(() => {
-        console.log('开始初始化Canvas...');
+      // 使用wx.nextTick确保DOM更新完成
+      wx.nextTick(() => {
+        console.log('DOM更新完成，开始初始化Canvas...');
+        
+        // 设置超时，如果Canvas初始化失败，快速切换到图片预览
+        const canvasTimeout = setTimeout(() => {
+          console.log('Canvas初始化超时，切换到图片预览模式');
+          if (this.data.preWearImage) {
+            this.showImagePreview(this.data.preWearImage);
+          }
+        }, 2000); // 2秒超时
+        
+        // 初始化Canvas
         this.initCanvas();
         
-        // 如果已有图片，确保Canvas就绪后再绘制
+        // 如果已有图片，使用更可靠的绘制流程
         if (this.data.preWearImage) {
-          console.log('已有图片，等待Canvas就绪后绘制...');
+          console.log('已有图片，将在Canvas就绪后绘制...');
           
-          // 等待Canvas初始化完成
-          const checkInterval = setInterval(() => {
-            if (this.data.canvasReady) {
-              clearInterval(checkInterval);
-              console.log('Canvas就绪，开始绘制图片...');
-              this.drawImageOnCanvas(this.data.preWearImage);
-            }
-          }, 100);
-          
-          // 超时处理
-          setTimeout(() => {
-            clearInterval(checkInterval);
-            if (!this.data.canvasReady) {
-              console.error('Canvas初始化超时，尝试备用方案');
-              this.reinitializeCanvas();
-            }
-          }, 5000);
+          // 使用改进的ensureCanvasReady方法
+          this.ensureCanvasReadyImproved().then(() => {
+            clearTimeout(canvasTimeout);
+            console.log('Canvas就绪，开始绘制图片...');
+            this.drawImageOnCanvas(this.data.preWearImage);
+          }).catch((error: any) => {
+            clearTimeout(canvasTimeout);
+            console.error('等待Canvas就绪失败:', error);
+            // Canvas失败，立即切换到图片预览
+            this.showImagePreview(this.data.preWearImage);
+          });
+        } else {
+          // 没有图片，清除超时
+          clearTimeout(canvasTimeout);
         }
-      }, 500);
+      });
     });
   },
 
@@ -1788,6 +1870,42 @@ Page({
         ctx.draw(true);
       }
     });
+  },
+  
+  // 备用图片预览方法 - 当Canvas完全失败时使用
+  showImagePreview(imageUrl: string) {
+    console.log('使用备用图片预览方法:', imageUrl);
+    
+    // 设置一个标志，表示使用备用预览
+    this.setData({
+      useImagePreview: true,
+      imagePreviewUrl: imageUrl,
+      canvasReady: false // 标记Canvas未就绪
+    });
+    
+    // 显示提示信息
+    wx.showToast({
+      title: '使用图片预览模式',
+      icon: 'none',
+      duration: 2000
+    });
+    
+    console.log('已切换到图片预览模式');
+  },
+  
+  // 检查并切换到备用预览模式
+  checkAndSwitchToPreview(imageUrl: string) {
+    console.log('检查是否需要切换到备用预览模式...');
+    
+    // 设置超时检查
+    setTimeout(() => {
+      if (!this.data.canvasReady || !this.data.imageInfo) {
+        console.log('Canvas未就绪，切换到备用预览模式');
+        this.showImagePreview(imageUrl);
+      } else {
+        console.log('Canvas已就绪，继续使用Canvas模式');
+      }
+    }, 3000); // 3秒后检查
   },
   
   // 测试Canvas和图片
