@@ -1,18 +1,39 @@
-// device-location.ts - 设备定位功能
+// device-location.ts - 设备定位功能（支持导电量判断）
 Page({
   data: {
     // 当前状态
-    currentStep: 1, // 1: 佩戴前上传, 2: 标记位置, 3: 佩戴后上传, 4: 查看结果
+    currentStep: 1, // 1: 获取用户信息, 2: 连接设备, 3: 测量电阻值, 4: 查看结果
     isLoading: false,
     
-    // 图片相关
+    // 用户信息
+    userGender: '', // 'male' 或 'female'
+    userGenderDisplay: '', // '男' 或 '女'
+    
+    // 设备连接状态
+    bluetoothConnected: false,
+    deviceName: '',
+    deviceId: '',
+    connectionStatus: '未连接',
+    
+    // 导电量数据
+    conductivityData: {
+      earCavityValue: 0,
+      earConchaValue: 0,
+      measurementTime: '',
+      deviceId: ''
+    },
+    isMeasuring: false,
+    measurementProgress: 0,
+    
+    // 图片相关（保留但隐藏）
     preWearImage: '',
     postWearImage: '',
     referenceImage: '',
-    markingPoints: [], // 标记点数组 [{x, y}, ...]
+    markingPoints: [],
     isMarking: false,
+    showImageFeatures: false, // 控制是否显示图片功能
     
-    // Canvas相关
+    // Canvas相关（保留但隐藏）
     canvas: null as any,
     ctx: null as any,
     canvasReady: false,
@@ -21,11 +42,12 @@ Page({
     canvasWidth: 0,
     canvasHeight: 0,
     imageInfo: null as any,
-    canvasError: '', // Canvas错误信息
+    canvasError: '',
     
     // 记录信息
     currentRecordId: '',
     locationHistory: [],
+    conductivityHistory: [],
     
     // 分析结果
     analysisResult: null as any,
@@ -37,6 +59,18 @@ Page({
       successCount: 0,
       failCount: 0,
       totalTests: 0
+    },
+    
+    // 导电量参考范围（无量纲相对值）
+    conductivityRanges: {
+      male: {
+        earCavity: { min: 100.23, max: 121.57 },
+        earConcha: { min: 107.23, max: 111.71 }
+      },
+      female: {
+        earCavity: { min: 105.57, max: 125.17 },
+        earConcha: { min: 108.19, max: 112.99 }
+      }
     }
   },
 
@@ -1922,6 +1956,432 @@ Page({
         success: () => console.log('图片可以预览'),
         fail: (err: any) => console.error('图片预览失败:', err)
       });
+    }
+  },
+
+  // ==================== 导电量相关功能 ====================
+
+  // 步骤1: 获取用户信息
+  async getUserInfoStep() {
+    this.setData({ isLoading: true });
+    
+    try {
+      // 从云函数获取用户性别
+      const result = await wx.cloud.callFunction({
+        name: 'deviceLocation',
+        data: {
+          action: 'getUserGender'
+        }
+      });
+      
+      if (result.result.code === 200) {
+        const gender = result.result.data.gender;
+        const displayGender = result.result.data.displayGender;
+        
+        this.setData({
+          userGender: gender,
+          userGenderDisplay: displayGender,
+          currentStep: 2 // 进入下一步：连接设备
+        });
+        
+        wx.showToast({
+          title: `用户性别: ${displayGender}`,
+          icon: 'success',
+          duration: 2000
+        });
+      } else {
+        wx.showToast({
+          title: '获取用户信息失败',
+          icon: 'error'
+        });
+      }
+    } catch (error: any) {
+      console.error('获取用户信息失败:', error);
+      wx.showToast({
+        title: '获取用户信息失败',
+        icon: 'error'
+      });
+    } finally {
+      this.setData({ isLoading: false });
+    }
+  },
+
+  // 步骤2: 连接蓝牙设备
+  connectBluetoothDevice() {
+    this.setData({ isLoading: true });
+    
+    // 模拟蓝牙连接过程
+    setTimeout(() => {
+      this.setData({
+        bluetoothConnected: true,
+        deviceName: '智能助听器 Pro',
+        deviceId: 'device-001',
+        connectionStatus: '已连接',
+        currentStep: 3 // 进入下一步：测量电阻值
+      });
+      
+      wx.showToast({
+        title: '设备连接成功',
+        icon: 'success'
+      });
+      
+      this.setData({ isLoading: false });
+    }, 2000);
+  },
+
+  // 断开蓝牙设备
+  disconnectBluetoothDevice() {
+    this.setData({
+      bluetoothConnected: false,
+      deviceName: '',
+      deviceId: '',
+      connectionStatus: '未连接'
+    });
+    
+    wx.showToast({
+      title: '设备已断开',
+      icon: 'success'
+    });
+  },
+
+  // 步骤3: 开始测量导电量
+  startConductivityMeasurement() {
+    this.setData({ 
+      isMeasuring: true,
+      measurementProgress: 0
+    });
+    
+    // 模拟测量过程
+    const interval = setInterval(() => {
+      const progress = this.data.measurementProgress + 10;
+      this.setData({ measurementProgress: progress });
+      
+      if (progress >= 100) {
+        clearInterval(interval);
+        this.completeConductivityMeasurement();
+      }
+    }, 300);
+  },
+
+  // 完成导电量测量
+  completeConductivityMeasurement() {
+    // 生成模拟导电量数据（根据性别生成合理范围内的值）
+    const gender = this.data.userGender;
+    const ranges = this.data.conductivityRanges[gender] || this.data.conductivityRanges.male;
+    
+    // 在参考范围内生成随机值
+    const earCavityValue = this.generateRandomInRange(ranges.earCavity.min, ranges.earCavity.max);
+    const earConchaValue = this.generateRandomInRange(ranges.earConcha.min, ranges.earConcha.max);
+    
+    this.setData({
+      isMeasuring: false,
+      conductivityData: {
+        earCavityValue: earCavityValue,
+        earConchaValue: earConchaValue,
+        measurementTime: new Date().toISOString(),
+        deviceId: this.data.deviceId
+      }
+    });
+    
+    wx.showToast({
+      title: '测量完成',
+      icon: 'success'
+    });
+    
+    // 自动上传数据
+    this.uploadConductivityData();
+  },
+
+  // 生成指定范围内的随机数
+  generateRandomInRange(min: number, max: number): number {
+    return parseFloat((Math.random() * (max - min) + min).toFixed(2));
+  },
+
+  // 上传导电量数据
+  async uploadConductivityData() {
+    if (!this.data.conductivityData.earCavityValue || !this.data.conductivityData.earConchaValue) {
+      wx.showToast({
+        title: '请先完成测量',
+        icon: 'error'
+      });
+      return;
+    }
+    
+    wx.showLoading({
+      title: '上传数据中...',
+      mask: true
+    });
+    
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'deviceLocation',
+        data: {
+          action: 'uploadConductivityData',
+          earCavityValue: this.data.conductivityData.earCavityValue,
+          earConchaValue: this.data.conductivityData.earConchaValue,
+          deviceId: this.data.deviceId,
+          measurementTime: this.data.conductivityData.measurementTime
+        }
+      });
+      
+      if (result.result.code === 200) {
+        this.setData({
+          currentRecordId: result.result.data.recordId,
+          currentStep: 4 // 进入分析步骤
+        });
+        
+        // 自动开始分析
+        this.analyzeByConductivity();
+      } else {
+        wx.showToast({
+          title: result.result.message || '上传失败',
+          icon: 'error'
+        });
+      }
+    } catch (error: any) {
+      console.error('上传导电量数据失败:', error);
+      wx.showToast({
+        title: error.errMsg || '上传失败',
+        icon: 'error'
+      });
+    } finally {
+      wx.hideLoading();
+    }
+  },
+
+  // 分析导电量数据
+  async analyzeByConductivity() {
+    if (!this.data.currentRecordId) {
+      wx.showToast({
+        title: '请先上传数据',
+        icon: 'error'
+      });
+      return;
+    }
+    
+    wx.showLoading({
+      title: '分析中...',
+      mask: true
+    });
+    
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'deviceLocation',
+        data: {
+          action: 'analyzeByConductivity',
+          recordId: this.data.currentRecordId
+        }
+      });
+      
+      if (result.result.code === 200) {
+        const analysisResult = result.result.data.analysisResult;
+        const score = result.result.data.score;
+        
+        this.setData({
+          analysisResult: analysisResult,
+          score: score
+        });
+        
+        // 加载导电量历史
+        this.loadConductivityHistory();
+        
+        wx.showToast({
+          title: '分析完成',
+          icon: 'success'
+        });
+      } else {
+        wx.showToast({
+          title: result.result.message || '分析失败',
+          icon: 'error'
+        });
+      }
+    } catch (error: any) {
+      console.error('分析导电量数据失败:', error);
+      wx.showToast({
+        title: '分析失败',
+        icon: 'error'
+      });
+    } finally {
+      wx.hideLoading();
+    }
+  },
+
+  // 加载导电量历史
+  async loadConductivityHistory() {
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'deviceLocation',
+        data: {
+          action: 'getConductivityHistory'
+        }
+      });
+      
+      if (result.result.code === 200) {
+        this.setData({
+          conductivityHistory: result.result.data.history
+        });
+      }
+    } catch (error) {
+      console.error('加载导电量历史失败:', error);
+    }
+  },
+
+  // 显示导电量分析详情
+  showConductivityAnalysisDetail() {
+    const result = this.data.analysisResult;
+    if (!result) return;
+
+    let content = `📊 导电量分析报告\n\n`;
+    content += `👤 用户性别: ${result.details?.gender || '未知'}\n`;
+    content += `🏆 总分: ${result.totalScore || 0}分\n`;
+    content += `📍 耳甲腔匹配度: ${result.earCavityMatch || 0}分\n`;
+    content += `📐 耳甲艇匹配度: ${result.earConchaMatch || 0}分\n`;
+    content += `✅ 位置正确: ${result.positionCorrect ? '是' : '否'}\n\n`;
+
+    content += `📈 测量数据:\n`;
+    content += `• 耳甲腔导电量: ${result.earCavityValue?.toFixed(2) || '0.00'}\n`;
+    content += `• 耳甲艇导电量: ${result.earConchaValue?.toFixed(2) || '0.00'}\n\n`;
+
+    if (result.details) {
+      content += `📏 参考范围 (${result.details.gender}):\n`;
+      content += `• 耳甲腔: ${result.details.earCavityRange}\n`;
+      content += `• 耳甲艇: ${result.details.earConchaRange}\n\n`;
+
+      if (result.details.suggestions && result.details.suggestions.length > 0) {
+        content += '💡 建议:\n';
+        result.details.suggestions.forEach((suggestion: string, index: number) => {
+          content += `${index + 1}. ${suggestion}\n`;
+        });
+      }
+    }
+
+    wx.showModal({
+      title: '导电量分析详情',
+      content: content,
+      showCancel: false,
+      confirmText: '确定'
+    });
+  },
+
+  // 切换显示图片功能（隐藏/显示）
+  toggleImageFeatures() {
+    this.setData({
+      showImageFeatures: !this.data.showImageFeatures
+    });
+    
+    wx.showToast({
+      title: this.data.showImageFeatures ? '已显示图片功能' : '已隐藏图片功能',
+      icon: 'none'
+    });
+  },
+
+  // 重新开始导电量测量流程
+  restartConductivityProcess() {
+    this.setData({
+      currentStep: 1,
+      userGender: '',
+      userGenderDisplay: '',
+      bluetoothConnected: false,
+      deviceName: '',
+      deviceId: '',
+      connectionStatus: '未连接',
+      conductivityData: {
+        earCavityValue: 0,
+        earConchaValue: 0,
+        measurementTime: '',
+        deviceId: ''
+      },
+      isMeasuring: false,
+      measurementProgress: 0,
+      currentRecordId: '',
+      analysisResult: null,
+      score: 0
+    });
+  },
+
+  // 手动输入电阻值（用于测试）
+  manualInputResistance() {
+    wx.showModal({
+      title: '手动输入电阻值',
+      content: '请输入耳甲腔和耳甲艇的电阻值',
+      editable: true,
+      placeholderText: '格式: 耳甲腔值,耳甲艇值 (如: 110.5,109.8)',
+      success: (res) => {
+        if (res.confirm && res.content) {
+          const values = res.content.split(',').map(v => parseFloat(v.trim()));
+          if (values.length === 2 && !isNaN(values[0]) && !isNaN(values[1])) {
+            this.setData({
+              resistanceData: {
+                earCavityValue: values[0],
+                earConchaValue: values[1],
+                measurementTime: new Date().toISOString(),
+                deviceId: this.data.deviceId || 'manual-input'
+              }
+            });
+            
+            wx.showToast({
+              title: '输入成功',
+              icon: 'success'
+            });
+          } else {
+            wx.showToast({
+              title: '输入格式错误',
+              icon: 'error'
+            });
+          }
+        }
+      }
+    });
+  },
+
+  // ==================== 辅助方法 ====================
+
+  // 获取电阻值状态（用于样式）
+  getResistanceStatus(type: 'earCavity' | 'earConcha'): string {
+    const value = type === 'earCavity' 
+      ? this.data.resistanceData.earCavityValue 
+      : this.data.resistanceData.earConchaValue;
+    
+    if (value === 0) return '';
+    
+    const gender = this.data.userGender;
+    const ranges = this.data.resistanceRanges[gender] || this.data.resistanceRanges.male;
+    const range = type === 'earCavity' ? ranges.earCavity : ranges.earConcha;
+    
+    if (value >= range.min && value <= range.max) {
+      return 'normal';
+    } else if (value < range.min) {
+      return 'low';
+    } else {
+      return 'high';
+    }
+  },
+
+  // 获取电阻值参考范围
+  getResistanceRange(type: 'earCavity' | 'earConcha'): string {
+    const gender = this.data.userGender;
+    const ranges = this.data.resistanceRanges[gender] || this.data.resistanceRanges.male;
+    const range = type === 'earCavity' ? ranges.earCavity : ranges.earConcha;
+    
+    return `${range.min.toFixed(2)}-${range.max.toFixed(2)}`;
+  },
+
+  // 格式化测量时间
+  formatMeasurementTime(timeString: string): string {
+    if (!timeString) return '未知时间';
+    
+    try {
+      const date = new Date(timeString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    } catch (error) {
+      return '未知时间';
     }
   }
 });

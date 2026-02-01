@@ -1,6 +1,10 @@
 // alarm.ts
 import { sleepAlarmService, type SleepAlarm } from '../../utils/sleepCloud'
 
+// 微信小程序类型声明
+declare const Page: any
+declare const wx: any
+
 Page({
   data: {
     alarms: [] as Array<{
@@ -35,7 +39,7 @@ Page({
       const cloudAlarms = await sleepAlarmService.getUserAlarms()
       
       // 转换数据格式
-      const alarms = cloudAlarms.map(alarm => {
+      const alarms = cloudAlarms.map((alarm: any) => {
         const repeatText = this.getRepeatText(alarm.daysOfWeek)
         const typeText = this.getAlarmTypeText(alarm.sound, alarm.wakeMethod)
         
@@ -156,7 +160,7 @@ Page({
       await sleepAlarmService.updateAlarm(id, { isActive: enabled })
       
       // 更新本地数据
-      const alarms = this.data.alarms.map(alarm => {
+      const alarms = this.data.alarms.map((alarm: any) => {
         if (alarm._id === id) {
           return { ...alarm, enabled };
         }
@@ -199,14 +203,14 @@ Page({
     wx.showModal({
       title: '确认删除',
       content: '确定要删除这个闹钟吗？',
-      success: async (res) => {
+      success: async (res: any) => {
         if (res.confirm) {
           try {
             // 从云开发删除
             await sleepAlarmService.deleteAlarm(id)
             
             // 更新本地数据
-            const alarms = this.data.alarms.filter(alarm => alarm._id !== id);
+            const alarms = this.data.alarms.filter((alarm: any) => alarm._id !== id);
             this.setData({ alarms });
             
             wx.showToast({
@@ -222,6 +226,13 @@ Page({
           }
         }
       }
+    });
+  },
+
+  // 跳转到测试页面
+  goToTestPage() {
+    wx.navigateTo({
+      url: '/pages/alarm-test/alarm-test'
     });
   }
 });

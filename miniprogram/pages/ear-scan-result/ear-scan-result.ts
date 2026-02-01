@@ -15,14 +15,20 @@ Page({
       hasLesion: false,
       confidence: 0,
       details: {} as any,
-      imageUrl: ''
+      imageUrl: '',
+      overallStatus: '',
+      visibleStructures: [] as string[],
+      abnormalFindings: [] as string[],
+      possibleConditions: [] as string[],
+      disclaimer: ''
     },
     suggestions: [] as string[],
     comparison: {
       lastTime: '',
       lastStatus: '',
       trend: ''
-    }
+    },
+    confidencePercentage: '0.0'
   },
 
   onLoad(options: any) {
@@ -57,36 +63,37 @@ Page({
         const scanTime = new Date(scanData.scanTime);
         const formattedTime = `${scanTime.getFullYear()}年${scanTime.getMonth() + 1}月${scanTime.getDate()}日 ${scanTime.getHours().toString().padStart(2, '0')}:${scanTime.getMinutes().toString().padStart(2, '0')}`;
         
-        // 更新耳部结构状态
-        const structures = [
-          { name: '耳廓', status: '正常' },
-          { name: '外耳道', status: '正常' },
-          { name: '鼓膜', status: '正常' }
-        ];
+        // 根据API返回的数据构建耳部结构状态
+        const structures = this.buildStructuresFromAPI(analysisResult);
         
-        // 如果有病变，更新相关部位状态
-        if (analysisResult.hasLesion && analysisResult.details.location) {
-          const location = analysisResult.details.location;
-          structures.forEach(structure => {
-            if (structure.name === location) {
-              structure.status = '需关注';
-            }
-          });
-        }
+        // 构建异常描述
+        const abnormalDescription = this.buildAbnormalDescription(analysisResult);
+        
+        // 构建整体状态
+        const overallStatus = analysisResult.hasLesion ? '需关注' : '正常';
+        
+        // 计算置信度百分比
+        const confidencePercentage = (analysisResult.confidence * 100).toFixed(1);
         
         this.setData({
           result: {
             time: formattedTime,
             images: [scanData.imageUrl],
             structures: structures,
-            abnormal: analysisResult.hasLesion ? analysisResult.details.description : '',
+            abnormal: abnormalDescription,
             hasLesion: analysisResult.hasLesion,
             confidence: analysisResult.confidence,
             details: analysisResult.details,
-            imageUrl: scanData.imageUrl
+            imageUrl: scanData.imageUrl,
+            overallStatus: overallStatus,
+            visibleStructures: analysisResult.details?.structures || [],
+            abnormalFindings: analysisResult.details?.findings || [],
+            possibleConditions: analysisResult.details?.conditions || [],
+            disclaimer: analysisResult.disclaimer || '本分析由AI生成，仅供参考，不能替代专业医疗诊断。如有不适请及时就医。'
           },
           suggestions: analysisResult.recommendations || [],
-          comparison: this.generateComparison(analysisResult.hasLesion)
+          comparison: this.generateComparison(analysisResult.hasLesion),
+          confidencePercentage: confidencePercentage
         });
         
         // 保存到本地历史记录
@@ -123,6 +130,9 @@ Page({
       const scanTime = new Date();
       const formattedTime = `${scanTime.getFullYear()}年${scanTime.getMonth() + 1}月${scanTime.getDate()}日 ${scanTime.getHours().toString().padStart(2, '0')}:${scanTime.getMinutes().toString().padStart(2, '0')}`;
       
+      // 计算置信度百分比
+      const confidencePercentage = ((localRecord.confidence || 0.85) * 100).toFixed(1);
+      
       this.setData({
         result: {
           time: formattedTime,
@@ -154,7 +164,8 @@ Page({
           '继续保持良好的耳部卫生习惯',
           '避免长时间使用耳机'
         ],
-        comparison: this.generateComparison(localRecord.hasLesion)
+        comparison: this.generateComparison(localRecord.hasLesion),
+        confidencePercentage: confidencePercentage
       });
     }
   },
@@ -205,6 +216,67 @@ Page({
       lastStatus: '',
       trend: ''
     };
+  },
+
+  // 根据API返回的数据构建耳部结构状态
+  buildStructuresFromAPI(analysisResult: any): Array<{name: string, status: string}> {
+    const apiStructures = analysisResult.details?.structures || [];
+    const hasLesion = analysisResult.hasLesion;
+    const findings = analysisResult.details?.findings || [];
+    
+    // 如果API返回了可见结构，使用API的数据
+    if (apiStructures.length > 0) {
+      return apiStructures.map((structure: string) => {
+        // 检查这个结构是否有异常发现
+        const hasFinding = findings.some((finding: string) => 
+          finding.toLowerCase().includes(structure.toLowerCase()) || 
+          structure.toLowerCase().includes(finding.toLowerCase())
+        );
+        
+        return {
+          name: structure,
+          status: hasFinding ? '需关注' : '正常'
+        };
+      });
+    }
+    
+    // 否则使用默认的3个结构
+    return [
+      { name: '耳廓', status: hasLesion ? '需关注' : '正常' },
+      { name: '外耳道', status: '正常' },
+      { name: '鼓膜', status: '正常' }
+    ];
+  },
+
+  // 构建异常描述
+  buildAbnormalDescription(analysisResult: any): string {
+    if (!analysisResult.hasLesion) {
+      return '未发现明显异常，所有结构均在正常范围内。';
+    }
+    
+    const details = analysisResult.details || {};
+    const findings = details.findings || [];
+    const conditions = details.conditions || [];
+    const description = details.description || '';
+    
+    // 构建完整的异常描述
+    let abnormalDesc = '';
+    
+    if (findings.length > 0) {
+      abnormalDesc += `异常发现：${findings.join('；')}`;
+    }
+    
+    if (conditions.length > 0) {
+      if (abnormalDesc) abnormalDesc += '。';
+      abnormalDesc += `可能病症：${conditions.join('；')}`;
+    }
+    
+    if (description && !abnormalDesc.includes(description)) {
+      if (abnormalDesc) abnormalDesc += '。';
+      abnormalDesc += description;
+    }
+    
+    return abnormalDesc || '检测到异常，建议进一步检查。';
   },
 
   // 格式化日期

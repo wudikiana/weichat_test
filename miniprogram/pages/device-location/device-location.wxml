@@ -6,28 +6,301 @@
     <text class="loading-text">加载中...</text>
   </view>
 
-  <!-- 步骤指示器 -->
-  <view class="step-indicator">
-    <view class="step-item {{currentStep >= 1 ? 'active' : ''}}">
-      <view class="step-number">1</view>
-      <text class="step-label">上传佩戴前图片</text>
+  <!-- 功能切换按钮 -->
+  <view class="mode-switch" wx:if="{{showImageFeatures || currentStep <= 1}}">
+    <t-button theme="{{showImageFeatures ? 'default' : 'primary'}}" size="small" bind:tap="toggleImageFeatures">
+      {{showImageFeatures ? '切换到电阻值模式' : '显示图片功能'}}
+    </t-button>
+  </view>
+
+  <!-- 电阻值测量流程 -->
+  <view wx:if="{{!showImageFeatures}}">
+    <!-- 步骤指示器（电阻值模式） -->
+    <view class="step-indicator">
+      <view class="step-item {{currentStep >= 1 ? 'active' : ''}}">
+        <view class="step-number">1</view>
+        <text class="step-label">获取用户信息</text>
+      </view>
+      <view class="step-line"></view>
+      <view class="step-item {{currentStep >= 2 ? 'active' : ''}}">
+        <view class="step-number">2</view>
+        <text class="step-label">连接设备</text>
+      </view>
+      <view class="step-line"></view>
+      <view class="step-item {{currentStep >= 3 ? 'active' : ''}}">
+        <view class="step-number">3</view>
+        <text class="step-label">测量电阻值</text>
+      </view>
+      <view class="step-line"></view>
+      <view class="step-item {{currentStep >= 4 ? 'active' : ''}}">
+        <view class="step-number">4</view>
+        <text class="step-label">查看分析结果</text>
+  </view>
+</view>
+</view>
+
+    <!-- 步骤1: 获取用户信息 -->
+    <view class="step-content" wx:if="{{currentStep === 1}}">
+      <view class="section">
+        <text class="section-title">获取用户信息</text>
+        <text class="section-desc">系统将自动获取您的性别信息，用于电阻值分析</text>
+        
+        <view class="user-info-card">
+          <t-icon name="user" size="64px" color="#0052D9" />
+          <text class="user-info-text" wx:if="{{userGenderDisplay}}">
+            性别：{{userGenderDisplay}}
+          </text>
+          <text class="user-info-text" wx:else>
+            正在获取用户信息...
+          </text>
+        </view>
+        
+        <view class="info-tips">
+          <text class="tip-item">• 性别信息用于选择正确的电阻值参考范围</text>
+          <text class="tip-item">• 男性参考范围：耳甲腔 100.23-121.57，耳甲艇 107.23-111.71</text>
+          <text class="tip-item">• 女性参考范围：耳甲腔 105.57-125.17，耳甲艇 108.19-112.99</text>
+        </view>
+      </view>
+
+      <view class="action-buttons">
+        <t-button theme="primary" size="large" bind:tap="getUserInfoStep">
+          获取用户信息
+        </t-button>
+        <t-button theme="default" size="large" bind:tap="manualInputResistance">
+          手动输入测试数据
+        </t-button>
+      </view>
     </view>
-    <view class="step-line"></view>
-    <view class="step-item {{currentStep >= 2 ? 'active' : ''}}">
-      <view class="step-number">2</view>
-      <text class="step-label">标记佩戴位置</text>
+
+    <!-- 步骤2: 连接设备 -->
+    <view class="step-content" wx:if="{{currentStep === 2}}">
+      <view class="section">
+        <text class="section-title">连接蓝牙设备</text>
+        <text class="section-desc">请连接您的智能助听器设备，用于测量电阻值</text>
+        
+        <view class="device-status-card {{bluetoothConnected ? 'connected' : 'disconnected'}}">
+          <view class="device-status-icon">
+            <t-icon name="{{bluetoothConnected ? 'bluetooth' : 'bluetooth-off'}}" size="48px" color="{{bluetoothConnected ? '#0052D9' : '#999999'}}" />
+          </view>
+          <view class="device-status-info">
+            <text class="device-name">{{deviceName || '未连接设备'}}</text>
+            <text class="device-status">{{connectionStatus}}</text>
+            <text class="device-id" wx:if="{{deviceId}}">设备ID：{{deviceId}}</text>
+          </view>
+        </view>
+        
+        <view class="connection-guide">
+          <text class="guide-title">连接步骤：</text>
+          <text class="guide-step">1. 确保设备已开启并进入配对模式</text>
+          <text class="guide-step">2. 点击下方"连接设备"按钮</text>
+          <text class="guide-step">3. 等待连接成功提示</text>
+        </view>
+      </view>
+
+      <view class="action-buttons">
+        <t-button theme="default" size="large" bind:tap="goToStep1">
+          上一步
+        </t-button>
+        <t-button theme="primary" size="large" bind:tap="connectBluetoothDevice" wx:if="{{!bluetoothConnected}}">
+          连接设备
+        </t-button>
+        <t-button theme="warning" size="large" bind:tap="disconnectBluetoothDevice" wx:if="{{bluetoothConnected}}">
+          断开连接
+        </t-button>
+        <t-button theme="primary" size="large" bind:tap="goToStep3" wx:if="{{bluetoothConnected}}">
+          下一步：测量电阻值
+        </t-button>
+      </view>
     </view>
-    <view class="step-line"></view>
-    <view class="step-item {{currentStep >= 3 ? 'active' : ''}}">
-      <view class="step-number">3</view>
-      <text class="step-label">上传佩戴后图片</text>
+
+    <!-- 步骤3: 测量电阻值 -->
+    <view class="step-content" wx:if="{{currentStep === 3}}">
+      <view class="section">
+        <text class="section-title">测量电阻值</text>
+        <text class="section-desc">请佩戴设备，系统将自动测量耳甲腔和耳甲艇的电阻值</text>
+        
+        <view class="measurement-card">
+          <view class="measurement-progress" wx:if="{{isMeasuring}}">
+            <t-progress percentage="{{measurementProgress}}" />
+            <text class="progress-text">测量中... {{measurementProgress}}%</text>
+          </view>
+          
+          <view class="measurement-results" wx:if="{{!isMeasuring && resistanceData.earCavityValue > 0}}">
+            <view class="resistance-item">
+              <text class="resistance-label">耳甲腔电阻值</text>
+              <text class="resistance-value {{getResistanceStatus('earCavity')}}">
+                {{resistanceData.earCavityValue.toFixed(2)}}
+              </text>
+              <text class="resistance-range">参考范围：{{getResistanceRange('earCavity')}}</text>
+            </view>
+            
+            <view class="resistance-item">
+              <text class="resistance-label">耳甲艇电阻值</text>
+              <text class="resistance-value {{getResistanceStatus('earConcha')}}">
+                {{resistanceData.earConchaValue.toFixed(2)}}
+              </text>
+              <text class="resistance-range">参考范围：{{getResistanceRange('earConcha')}}</text>
+            </view>
+            
+            <view class="measurement-time">
+              <t-icon name="time" size="16px" color="#999999" />
+              <text class="time-text">测量时间：{{formatMeasurementTime(resistanceData.measurementTime)}}</text>
+            </view>
+          </view>
+          
+          <view class="measurement-guide" wx:if="{{!isMeasuring && resistanceData.earCavityValue === 0}}">
+            <text class="guide-title">测量准备：</text>
+            <text class="guide-step">1. 确保设备已正确佩戴</text>
+            <text class="guide-step">2. 保持头部稳定，不要移动</text>
+            <text class="guide-step">3. 点击"开始测量"按钮</text>
+            <text class="guide-step">4. 等待测量完成（约3秒）</text>
+          </view>
+        </view>
+        
+        <view class="resistance-info">
+          <text class="info-title">电阻值说明：</text>
+          <text class="info-text">• 电阻值反映设备与耳朵的接触质量</text>
+          <text class="info-text">• 值在正常范围内表示佩戴位置正确</text>
+          <text class="info-text">• 值偏低可能表示接触不良</text>
+          <text class="info-text">• 值偏高可能表示位置偏移</text>
+        </view>
+      </view>
+
+      <view class="action-buttons">
+        <t-button theme="default" size="large" bind:tap="goToStep2">
+          上一步
+        </t-button>
+        <t-button theme="primary" size="large" bind:tap="startResistanceMeasurement" wx:if="{{!isMeasuring && resistanceData.earCavityValue === 0}}">
+          开始测量
+        </t-button>
+        <t-button theme="primary" size="large" bind:tap="uploadResistanceData" wx:if="{{!isMeasuring && resistanceData.earCavityValue > 0}}">
+          上传数据并分析
+        </t-button>
+        <t-button theme="warning" size="large" bind:tap="manualInputResistance">
+          手动输入
+        </t-button>
+      </view>
     </view>
-    <view class="step-line"></view>
-    <view class="step-item {{currentStep >= 4 ? 'active' : ''}}">
-      <view class="step-number">4</view>
-      <text class="step-label">查看分析结果</text>
+
+    <!-- 步骤4: 查看分析结果（电阻值模式） -->
+    <view class="step-content" wx:if="{{currentStep === 4}}">
+      <view class="section">
+        <text class="section-title">电阻值分析结果</text>
+        
+        <!-- 评分卡片 -->
+        <view class="score-card">
+          <view class="score-circle">
+            <text class="score-value">{{score}}</text>
+            <text class="score-label">分</text>
+          </view>
+          <view class="score-details">
+            <text class="score-title">佩戴位置评分</text>
+            <text class="score-desc" wx:if="{{analysisResult}}">
+              {{analysisResult.positionCorrect ? '佩戴位置正确' : '需要调整佩戴位置'}}
+            </text>
+          </view>
+        </view>
+        
+        <!-- 电阻值分析详情 -->
+        <view class="analysis-details" wx:if="{{analysisResult}}">
+          <view class="detail-item">
+            <text class="detail-label">耳甲腔匹配度</text>
+            <view class="detail-value">
+              <t-progress percentage="{{analysisResult.earCavityMatch}}" />
+              <text class="detail-percent">{{analysisResult.earCavityMatch}}%</text>
+            </view>
+            <text class="detail-desc">值：{{analysisResult.earCavityValue.toFixed(2)}}（范围：{{analysisResult.details.earCavityRange}}）</text>
+          </view>
+          
+          <view class="detail-item">
+            <text class="detail-label">耳甲艇匹配度</text>
+            <view class="detail-value">
+              <t-progress percentage="{{analysisResult.earConchaMatch}}" />
+              <text class="detail-percent">{{analysisResult.earConchaMatch}}%</text>
+            </view>
+            <text class="detail-desc">值：{{analysisResult.earConchaValue.toFixed(2)}}（范围：{{analysisResult.details.earConchaRange}}）</text>
+          </view>
+          
+          <view class="detail-item">
+            <text class="detail-label">总体评价</text>
+            <view class="detail-value">
+              <t-tag theme="{{analysisResult.positionCorrect ? 'success' : 'danger'}}" size="medium">
+                {{analysisResult.positionCorrect ? '位置正确' : '需要调整'}}
+              </t-tag>
+            </view>
+            <text class="detail-desc">用户性别：{{analysisResult.details.gender}}</text>
+          </view>
+        </view>
+        
+        <!-- 改进建议 -->
+        <view class="suggestions" wx:if="{{analysisResult && analysisResult.details.suggestions.length > 0}}">
+          <text class="suggestions-title">改进建议</text>
+          <view class="suggestion-list">
+            <view class="suggestion-item" wx:for="{{analysisResult.details.suggestions}}" wx:key="index">
+              <t-icon name="lightning" size="16px" color="#0052D9" />
+              <text class="suggestion-text">{{item}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 电阻值历史记录 -->
+      <view class="section" wx:if="{{resistanceHistory.length > 0}}">
+        <text class="section-title">电阻值测量历史</text>
+        <view class="history-list">
+          <view class="history-item" wx:for="{{resistanceHistory}}" wx:key="id">
+            <view class="history-date">{{item.date}}</view>
+            <view class="history-data">
+              <text class="data-item">耳甲腔：{{item.earCavityValue.toFixed(2)}}</text>
+              <text class="data-item">耳甲艇：{{item.earConchaValue.toFixed(2)}}</text>
+            </view>
+            <view class="history-score">
+              <t-tag theme="{{item.positionCorrect ? 'success' : 'danger'}}" size="small">
+                {{item.score}}分
+              </t-tag>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="action-buttons">
+        <t-button theme="default" size="large" bind:tap="restartResistanceProcess">
+          重新测量
+        </t-button>
+        <t-button theme="primary" size="large" bind:tap="showResistanceAnalysisDetail">
+          查看详细报告
+        </t-button>
+        <t-button theme="primary" size="large" bind:tap="shareResult">
+          分享结果
+        </t-button>
+      </view>
     </view>
   </view>
+
+  <!-- 图片对比流程（隐藏模式） -->
+  <view wx:if="{{showImageFeatures}}">
+    <!-- 步骤指示器（图片模式） -->
+    <view class="step-indicator">
+      <view class="step-item {{currentStep >= 1 ? 'active' : ''}}">
+        <view class="step-number">1</view>
+        <text class="step-label">上传佩戴前图片</text>
+      </view>
+      <view class="step-line"></view>
+      <view class="step-item {{currentStep >= 2 ? 'active' : ''}}">
+        <view class="step-number">2</view>
+        <text class="step-label">标记佩戴位置</text>
+      </view>
+      <view class="step-line"></view>
+      <view class="step-item {{currentStep >= 3 ? 'active' : ''}}">
+        <view class="step-number">3</view>
+        <text class="step-label">上传佩戴后图片</text>
+      </view>
+      <view class="step-line"></view>
+      <view class="step-item {{currentStep >= 4 ? 'active' : ''}}">
+        <view class="step-number">4</view>
+        <text class="step-label">查看分析结果</text>
+      </view>
+    </view>
 
   <!-- 步骤1: 上传佩戴前图片 -->
   <view class="step-content" wx:if="{{currentStep === 1}}">

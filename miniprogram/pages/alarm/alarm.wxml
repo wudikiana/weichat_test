@@ -33,4 +33,10 @@
   <view class="fab-wrapper">
     <t-button theme="primary" size="large" shape="round" bind:tap="addAlarm">添加闹钟</t-button>
   </view>
+
+  <view class="test-section">
+    <text class="test-title">音频测试</text>
+    <text class="test-desc">如果闹钟铃声无法播放，请点击下方按钮进行测试</text>
+    <t-button theme="default" size="medium" shape="round" bind:tap="goToTestPage">测试音频播放</t-button>
+  </view>
 </view>

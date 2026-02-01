@@ -75,8 +75,23 @@ Page({
     });
     
     try {
+      // 获取文件扩展名
+      const fileName = imagePath.substring(imagePath.lastIndexOf('/') + 1);
+      const fileExt = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+      
+      // 验证文件扩展名
+      const allowedExtensions = ['.jpg', '.jpeg', '.png', '.bmp'];
+      if (!allowedExtensions.includes(fileExt)) {
+        wx.showToast({
+          title: `不支持的文件格式，仅支持: ${allowedExtensions.join(', ')}`,
+          icon: 'error'
+        });
+        wx.hideLoading();
+        return;
+      }
+      
       // 1. 上传图片到云存储
-      const cloudPath = `ear-scans/temp_${Date.now()}_${Math.random().toString(36).substring(2)}.jpg`;
+      const cloudPath = `ear-scans/temp_${Date.now()}_${Math.random().toString(36).substring(2)}${fileExt}`;
       const uploadResult = await wx.cloud.uploadFile({
         cloudPath: cloudPath,
         filePath: imagePath
@@ -85,7 +100,6 @@ Page({
       wx.showLoading({ title: '分析中...' });
       
       // 2. 调用云函数进行分析
-      const fileName = imagePath.substring(imagePath.lastIndexOf('/') + 1);
       const result = await wx.cloud.callFunction({
         name: 'earScan',
         data: {
